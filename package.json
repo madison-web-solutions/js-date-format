@@ -1,0 +1,28 @@
+{
+  "name": "date-format-ms",
+  "version": "1.0.0",
+  "description": "Formatting of date strings (using format codes that match the PHP date() function)",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "jest --config jestconfig.json",
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/madison-web-solutions/js-date-format.git"
+  },
+  "author": "Dan Howard",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^26.0.24",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.4",
+    "typescript": "^4.3.5"
+  },
+  "files": [
+    "lib/**/*"
+  ]
+}
