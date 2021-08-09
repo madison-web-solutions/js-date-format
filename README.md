@@ -2,6 +2,21 @@
 
 Formatting of date and times in JS using format codes that match the PHP date() function.
 
+For example:
+
+```js
+import { dateToLocalFormat }
+
+dateToLocalFormat(new Date(), 'D jS M Y g:ia'); // "Monday 9th Aug 2021 5:30pm"
+```
+
+-----
+
+Note that for the examples in this document, the system timezone is taken to be Europe/Istanbul, where the local time
+is UTC+3:00 (all year).
+
+-----
+
 ## Format codes ##
 
 Formatting functions in this package work by supplying a string representing the required format using various codes, as defined in the table below.
@@ -64,6 +79,8 @@ Codes from PHP's date() function that are not yet supported:
  - Various timezone related codes (`e`, `I`, `O`, `P`, `p`, `T`, `Z`) - Not supported because the javascript Date object doesn't contain a timezone, instead it represents a point in time, and your only choices for extracting values from it are UTC or whatever your system's local timezone is configured as.
  - Combination code (`c`,`r`) - Not supported because they contain a timezone indicator (see note above)
 
+-----
+
 ## Formatting Functions ##
 
 #### dateToUtcFormat and dateToLocalFormat
@@ -77,7 +94,6 @@ If you use `dateToLocalFormat`, the output will be in your local timezone, if yo
 ```js
 import { dateToUtcFormat, dateToLocalFormat } from 'date-format-ms';
 
-// Suppose you're in Istanbul, where the local time is UTC+3:00 (all year)
 const d0 = new Date(2021, 0, 1, 1, 30, 0, 0);
 // d0 represents Jan 1st 2021 1:30am in the local (Istanbul) time
 dateToLocalFormat(d0, 'Y-m-d H:i:s'); // "2021-01-01 01:30:00"
@@ -92,40 +108,112 @@ dateToUtcFormat(d1, 'Y-m-d H:i:s'); // "2021-01-01 01:30:00"
 dateToLocalFormat(d1, 'Y-m-d H:i:s'); // "2021-01-01 04:30:00"
 ```
 
+#### ymdHisToFormat
+
+`(ymdHis: any, format: string): string | null`
+
+Takes a date represented as a string in the 'Y-m-d H:i:s' format, and turns it into a string in the supplied format.
+
+If the input is not a string, or is not in the expected 'Y-m-d H:i:s' format, the return value will be `null`.
+
+```js
+import { ymdHisToFormat } from 'date-format-ms';
+
+ymdHisToFormat('2021-09-08 10:45:05', 'D jS F g:ia'); // "Monday 9th August 10:45am"
+```
+
 #### ymdToFormat
 
 `(ymd: any, format: string): string | null`
 
 Takes a date represented as a string in the 'Y-m-d' format, and turns it into a string in the supplied format.
 
+This is useful for formatting a value that represents just a date, with no time information.
+
 If the input is not a string, or is not in the expected 'Y-m-d' format, the return value will be `null`.
 
-All time parameters will be zero - IE the instant represented is 00:00:00 on the given date.
+Internally, all time parameters will be zero - IE the instant represented is 00:00:00 on the given date.
 
 ```js
 import { ymdToFormat } from 'date-format-ms';
+
 ymdToFormat('2021-09-08', 'D jS F'); // "Monday 9th August"
 ymdToFormat('2021-09-08', 'D jS F H:i'); // "Monday 9th August 00:00"
 ```
 
-#### ymdHisToFormat
-
-@todo
-
-
 #### tsToUtcFormat and tsToLocalFormat,
 
-@todo
+`(ts: any, format: string): string | null`
+
+Takes a javascript timestamp (number) and turns it into a string in the supplied format.
+
+Javascript timestamps are defined as the number of _milliseconds_ since the Unix epoch (1st Jan 1970).
+Note that the Unix timestamp is normally defined as the number of _seconds_ since the Unix epoch, so to convert
+a Unix timestamp to a Javascript timestamp you can multiply by 1000.
+
+If you use `tsToLocalFormat`, the output will be in your local timezone, if you use `tsToUtcFormat` the output will will be in the UTC timezone.
+
+```js
+import { tsToUtcFormat, tsToLocalFormat } from 'date-format-ms';
+
+const ts = 1609464600000;
+// This is the timestamp for Jan 1st 2021 1:30am in UTC
+tsToUtcFormat(ts, 'Y-m-d H:i:s'); // "2021-01-01 01:30:00"
+// Istanbul is 3 hours ahead
+tsToLocalFormat(ts, 'Y-m-d H:i:s'); // "2021-01-01 04:30:00"
+```
+
+-----
 
 ## Conversion Functions
 
-#### utcYmdToDate and localYmdToDate
-
-@todo
-
 #### utcYmdHisToDate and localYmdHisToDate
 
-@todo
+`(ymdHis: any): Date | null`
+
+Takes a date represented as a string in the 'Y-m-d H:i:s' format, and turns it into a javascript Date object.
+
+If you use `utcYmdHisToDate`, the string will be interpreted as being in UTC.  If you use `localYmdHisToDate` then the
+string will be interpreted as being in your local timezone.
+
+If the input is not a string, or is not in the expected 'Y-m-d H:i:s' format, the return value will be `null`.
+
+```js
+import { utcYmdHisToDate, localYmdHisToDate } from 'date-format-ms';
+
+const d0 = utcYmdHisToDate('2021-09-08 10:45:05');
+d0.getUTCHours(); // 10
+d0.getHours(); // 13
+
+const d1 = localYmdHisToDate('2021-09-08 10:45:05');
+d1.getUTCHours(); // 7
+d1.getHours(); // 10
+```
+
+#### utcYmdToDate and localYmdToDate
+
+`(ymd: any): Date | null`
+
+Takes a date represented as a string in the 'Y-m-d' format, and turns it into a javascript Date object.
+
+If you use `utcYmdToDate`, the string will be interpreted as being in UTC (at 00:00).  If you use `localYmdToDate` then the
+string will be interpreted as being in your local timezone (at 00:00).
+
+If the input is not a string, or is not in the expected 'Y-m-d' format, the return value will be `null`.
+
+```js
+import { utcYmdToDate, localYmdToDate } from 'date-format-ms';
+
+const d0 = utcYmdToDate('2021-09-08');
+d0.getUTCHours(); // 0
+d0.getHours(); // 3 (local time is 3 hours ahead of UTC)
+
+const d1 = localYmdToDate('2021-09-08');
+d1.getUTCHours(); // 21 (UTC is 3 hours behind local time)
+d1.getHours(); // 0
+```
+
+-----
 
 ## Utility Functions
 
@@ -137,11 +225,24 @@ Returns true if the supplied year is a leap year, false otherwise.
 
 ```js
 import { isLeapYear } from 'date-format-ms';
+
 isLeapYear(2020); // true
 isLeapYear(2021); // false
 ```
 
 ### getNumDaysInMonth
 
-@todo
+`(date: Date, utc: boolean): number`
 
+Return the number of days in the month for the supplied javascript Date object.
+
+If the second parameter is true UTC month will be used, otherwise the local month will be used.
+
+```js
+import { getNumDaysInMonth } from 'date-format-ms';
+
+// 10pm April 30th UTC = 1am May 1st Istanbul (local) time
+const d = new Date(Date.UTC(2020, 3, 30, 22));
+getNumDaysInMonth(d, true); // 30 - the Date is in April UTC
+getNumDaysInMonth(d, false); // 31 - but it's May in local time
+```
