@@ -1,10 +1,52 @@
-import { isLeapYear, dateTimeFormat, ymdToFormat, ymdHisToFormat, ymdToDate, tsToFormat } from '../index';
+import {
+    isLeapYear,
+    numDaysInMonth,
+    dateToUtcFormat,
+    dateToLocalFormat,
+    ymdToFormat,
+    ymdHisToFormat,
+    utcYmdToDate,
+    localYmdToDate,
+    utcYmdHisToDate,
+    localYmdHisToDate,
+    tsToUtcFormat,
+    tsToLocalFormat,
+} from '../index';
+
+test('timezone', () => {
+    // These tests should be run in an environment where the timezone is Europe/Istanbul (UTC+03:00)
+    // This is set in the test script command in the package.json
+    // This timezone was chosen because it's different to UTC and has no daylight saving changes
+    // So we can test the differences between local and UTC results in a consistent way
+
+    // Check that the current system timezone is actually Europe/Istanbul (UTC+03:00)
+    expect((new Date()).getTimezoneOffset()).toBe(-180);
+});
 
 test('isLeapYear', () => {
     expect(isLeapYear(2000)).toBe(true);
     expect(isLeapYear(2001)).toBe(false);
     expect(isLeapYear(2004)).toBe(true);
     expect(isLeapYear(1900)).toBe(false);
+});
+
+test('numDaysInMonth', () => {
+    // April has 30 days
+    expect(numDaysInMonth(new Date(Date.UTC(2021, 3, 1)), true)).toBe(30);
+
+    // Should get the same answer from a date at the end of April
+    expect(numDaysInMonth(new Date(Date.UTC(2021, 3, 30)), true)).toBe(30);
+
+    // Feb in non-leap year
+    expect(numDaysInMonth(new Date(Date.UTC(2021, 1, 1)), true)).toBe(28);
+
+    // Feb in leap year
+    expect(numDaysInMonth(new Date(Date.UTC(2020, 1, 1)), true)).toBe(29);
+
+    // 10pm April 30th UTC = 1am May 1st Istanbul (local) time
+    const d: Date = new Date(Date.UTC(2020, 3, 30, 22));
+    expect(numDaysInMonth(d, true)).toBe(30);
+    expect(numDaysInMonth(d, false)).toBe(31);
 });
 
 test('singleChars1', () => {
@@ -80,15 +122,7 @@ test('singleChars2', () => {
     });
 });
 
-test('timezone', () => {
-    // These tests should be run in an environment where the timezone is Europe/Istanbul (UTC+03:00)
-    // This is set in the test script command in the package.json
-    // This timezone was chosen because it's different to UTC and has no daylight saving changes
-    // So we can test the differences between local and UTC results in a consistent way
-
-    // Check that the current system timezone is actually Europe/Istanbul (UTC+03:00)
-    expect((new Date()).getTimezoneOffset()).toBe(-180);
-
+test('dateTimeFormat', () => {
     // Create a date which is Jan 1st 2021 1am in Istanbul (local) time
     // In UTC it will be Dec 31st 2020 10pm - so just about every value will be different
     const d: Date = new Date(2021, 0, 1, 1);
@@ -99,8 +133,8 @@ test('timezone', () => {
         {format: 'N z o/W L', local: '5 0 2020/53 0', utc: '4 365 2020/53 1'},
     ];
     checks.forEach(check => {
-        expect(dateTimeFormat(d, check.format, false)).toBe(check.local);
-        expect(dateTimeFormat(d, check.format, true)).toBe(check.utc);
+        expect(dateToLocalFormat(d, check.format)).toBe(check.local);
+        expect(dateToUtcFormat(d, check.format)).toBe(check.utc);
     });
 });
 
@@ -117,28 +151,95 @@ test('ymdToFormat', () => {
 });
 
 test('ymdToDate', () => {
-    const checks: {ymd: string, valid: boolean, utcString: string}[] = [
-        {ymd: '2021-08-09', valid: true, utcString: 'Mon, 09 Aug 2021 00:00:00 GMT'},
-        {ymd: '2021 08 09', valid: false, utcString: ''},
+    const checks: {ymd: string, valid: boolean, utcUtcString: string, localUtcString:string}[] = [
+        {
+            ymd: '2021-08-09',
+            valid: true,
+            // If 2021-08-09 is interpreted as a UTC time, then the utdString for the date will match
+            utcUtcString: 'Mon, 09 Aug 2021 00:00:00 GMT',
+            // If 2021-08-09 is interpreted as Istanbul (local) time, then in UTC it will be 9pm the previous day
+            localUtcString: 'Sun, 08 Aug 2021 21:00:00 GMT',
+        },
+        {
+            // April has only 30 days - we should expect April 31 to be converted to May 1
+            ymd: '2021-04-31',
+            valid: true,
+            utcUtcString: 'Sat, 01 May 2021 00:00:00 GMT',
+            localUtcString: 'Fri, 30 Apr 2021 21:00:00 GMT',
+        },
+        {
+            // Test an invalid date
+            ymd: '2021 08 09',
+            valid: false,
+            utcUtcString: '',
+            localUtcString: '',
+        },
     ];
     checks.forEach(check => {
-        let d = ymdToDate(check.ymd);
+        let dUtc = utcYmdToDate(check.ymd);
+        let dLocal = localYmdToDate(check.ymd);
         if (check.valid) {
-            expect(d instanceof Date).toBe(true);
-            if (d instanceof Date) {
-                expect(d.toUTCString()).toBe(check.utcString);
+            expect(dUtc instanceof Date).toBe(true);
+            expect(dLocal instanceof Date).toBe(true);
+            if (dUtc instanceof Date) {
+                expect(dUtc.toUTCString()).toBe(check.utcUtcString);
+            }
+            if (dLocal instanceof Date) {
+                expect(dLocal.toUTCString()).toBe(check.localUtcString);
             }
         } else {
-            expect(d == null).toBe(true);
+            expect(dUtc == null).toBe(true);
+            expect(dLocal == null).toBe(true);
+        }
+    });
+});
+
+test('ymdHisToDate', () => {
+    const checks: {ymdHis: string, valid: boolean, utcUtcString: string, localUtcString:string}[] = [
+        {
+            ymdHis: '2021-08-09 01:20:39',
+            valid: true,
+            // If the string is interpreted as a UTC time, then the utdString for the date will match
+            utcUtcString: 'Mon, 09 Aug 2021 01:20:39 GMT',
+            // If the string is interpreted as Istanbul (local) time, then in UTC it will be the previous day
+            localUtcString: 'Sun, 08 Aug 2021 22:20:39 GMT',
+        },
+        {
+            // Deliberately overflow April's days and the number of mins in an hour
+            ymdHis: '2021-04-31 17:70:10',
+            valid: true,
+            utcUtcString: 'Sat, 01 May 2021 18:10:10 GMT',
+            localUtcString: 'Sat, 01 May 2021 15:10:10 GMT',
+        },
+        {
+            // Test an invalid string
+            ymdHis: '2021 08 09 234',
+            valid: false,
+            utcUtcString: '',
+            localUtcString: '',
+        },
+    ];
+    checks.forEach(check => {
+        let dUtc = utcYmdHisToDate(check.ymdHis);
+        let dLocal = localYmdHisToDate(check.ymdHis);
+        if (check.valid) {
+            expect(dUtc instanceof Date).toBe(true);
+            expect(dLocal instanceof Date).toBe(true);
+            if (dUtc instanceof Date) {
+                expect(dUtc.toUTCString()).toBe(check.utcUtcString);
+            }
+            if (dLocal instanceof Date) {
+                expect(dLocal.toUTCString()).toBe(check.localUtcString);
+            }
+        } else {
+            expect(dUtc == null).toBe(true);
+            expect(dLocal == null).toBe(true);
         }
     });
 });
 
 test('tsToFormat', () => {
-    // Check that the current system timezone is actually Europe/Istanbul (UTC+03:00)
-    expect((new Date()).getTimezoneOffset()).toBe(-180);
-
-    // Number below is JS timestamp for Dec 31st 2020 10pm
+    // Number below is JS timestamp for Dec 31st 2020 10pm UTC
     // In Istanbul (local) time it will be Jan 1st 2021 1am - so just about every value will be different
     const ts: number = 1609452000000;
     const checks: { format: string, local: string, utc: string }[] = [
@@ -148,7 +249,7 @@ test('tsToFormat', () => {
         {format: 'N z o/W L', local: '5 0 2020/53 0', utc: '4 365 2020/53 1'},
     ];
     checks.forEach(check => {
-        expect(tsToFormat(ts, check.format, false)).toBe(check.local);
-        expect(tsToFormat(ts, check.format, true)).toBe(check.utc);
+        expect(tsToLocalFormat(ts, check.format)).toBe(check.local);
+        expect(tsToUtcFormat(ts, check.format)).toBe(check.utc);
     });
 });

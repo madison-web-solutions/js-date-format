@@ -4,6 +4,8 @@ const longDayNames: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thu
 const shortMonthNames: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const longMonthNames: string[] = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const daysInMonthNotLeapYear: number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const microsecondsInDay: number = 1000 * 60 * 60 * 24;
+const microsecondsInWeek: number = 1000 * 60 * 60 * 24 * 7;
 
 const numToString = function(val: number, withLeadingZeros: boolean): string {
     const strVal = val.toString(10);
@@ -28,6 +30,22 @@ const isLeapYear = function(year: number): boolean {
     return (d1.getUTCDate() === 29);
 };
 
+const getStartOfDay = function(date: Date, utc: boolean): Date {
+    if (utc) {
+        return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    } else {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+};
+
+const getStartOfYear = function(date: Date, utc: boolean): Date {
+    if (utc) {
+        return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    } else {
+        return new Date(date.getFullYear(), 0, 1);
+    }
+};
+
 const getFirstThursdayOfYear = function(year: number, utc: boolean): Date {
     const d = (utc ? new Date(Date.UTC(year, 0, 1)) : new Date(year, 0, 1) );
     const n = (utc ? d.getUTCDay() : d.getDay());
@@ -36,12 +54,7 @@ const getFirstThursdayOfYear = function(year: number, utc: boolean): Date {
 };
 
 const getThursdayOfWeek = function(date: Date, utc: boolean): Date {
-    let d: Date;
-    if (utc) {
-        d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-    } else {
-        d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
+    const d: Date = getStartOfDay(date, utc);
     const n = (utc ? d.getUTCDay() : d.getDay());
     const offset = ((7 - n) % 7) - 3;
     d.setDate((utc ? d.getUTCDate() : d.getDate()) + offset);
@@ -70,16 +83,9 @@ const dayOfWeek = function(date: Date, utc: boolean): number {
 const dayOfYear = function(date: Date, utc: boolean): number {
     // The day of the year (starting from 0)
     // 0 through 365
-    let startOfDay: Date;
-    let startOfYear: Date;
-    if (utc) {
-        startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
-        startOfYear = new Date(Date.UTC(date.getUTCFullYear(), 0, 1, 0, 0, 0, 0));
-    } else {
-        startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-        startOfYear = new Date(date.getFullYear(), 0, 1, 0, 0, 0, 0);
-    }
-    return Math.round((startOfDay.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+    const tsAtStartOfDay = getStartOfDay(date, utc).getTime();
+    const tsAtStartOfYear = getStartOfYear(date, utc).getTime();
+    return Math.round((tsAtStartOfDay - tsAtStartOfYear) / microsecondsInDay);
 };
 
 const weekOfYear = function(date: Date, utc: boolean): number {
@@ -87,7 +93,7 @@ const weekOfYear = function(date: Date, utc: boolean): number {
     // See https://en.wikipedia.org/wiki/ISO_week_date for explanation of this
     const thisThur = getThursdayOfWeek(date, utc);
     const firstThur = getFirstThursdayOfYear(utc ? thisThur.getUTCFullYear() : thisThur.getFullYear(), utc);
-    return 1 + Math.round((thisThur.getTime() - firstThur.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    return 1 + Math.round((thisThur.getTime() - firstThur.getTime()) / microsecondsInWeek);
 };
 
 const month = function(date: Date, utc: boolean): number {
@@ -276,7 +282,7 @@ const dateTimeChar = function(char: string, date: Date, utc: boolean): string {
     }
 };
 
-const dateTimeFormat = function(date: Date, format: string, utc: boolean): string {
+const dateToFormat = function(date: Date, format: string, utc: boolean): string {
     let char: string;
     let out:string = '';
     for (let i = 0; i < format.length; i++) {
@@ -292,57 +298,84 @@ const dateTimeFormat = function(date: Date, format: string, utc: boolean): strin
     return out;
 };
 
-const ymdToDate = function(ymd: any): Date|null {
+const dateToUtcFormat = function(date: Date, format: string): string {
+    return dateToFormat(date, format, true);
+};
+
+const dateToLocalFormat = function(date: Date, format: string): string {
+    return dateToFormat(date, format, false);
+};
+
+const ymdToDate = function(ymd: any, utc: boolean): Date|null {
     if (typeof ymd == 'string') {
         const match = /^(\d\d\d\d)-(\d\d)-(\d\d)/.exec(ymd.replace(/\s/g, ''));
         if (match) {
             const year = parseInt(match[1], 10);
-            const month = parseInt(match[2], 10) - 1;
-            const date =  parseInt(match[3], 10);
-            // @todo utc or not?
-            return new Date(Date.UTC(year, month, date, 0, 0, 0, 0));
+            const monthIndex = parseInt(match[2], 10) - 1;
+            const dayOfMonth =  parseInt(match[3], 10);
+            if (utc) {
+                return new Date(Date.UTC(year, monthIndex, dayOfMonth, 0, 0, 0, 0));
+            } else {
+                return new Date(year, monthIndex, dayOfMonth, 0, 0, 0, 0);
+            }
         }
     }
     return null;
 };
 
+const utcYmdToDate = function(ymd: any): Date|null {
+    return ymdToDate(ymd, true);
+};
+
+const localYmdToDate = function(ymd: any): Date|null {
+    return ymdToDate(ymd, false);
+};
+
 const ymdToFormat = function(ymd: any, format: string): string|null {
-    const date = ymdToDate(ymd);
+    const date = ymdToDate(ymd, true);
     if (date) {
-        return dateTimeFormat(date, format, true);
+        return dateToFormat(date, format, true);
     } else {
         return null;
     }
 };
 
-const ymdHisToDate = function(ymdHis: any): Date|null {
+const ymdHisToDate = function(ymdHis: any, utc: boolean): Date|null {
     if (typeof ymdHis == 'string') {
         // look for Y-m-d H:i:s format (eg 2020-06-30 07:36:15)
         let match = /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/.exec(ymdHis.trim());
         if (! match) {
-            // also accept PHP's default timestamp format (eg 2020-06-30T07:36:15.000000Z)
-            match = /^(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d+)Z$/.exec(ymdHis.trim());
-        }
-        if (! match) {
             return null;
         }
         const year = parseInt(match[1], 10);
-        const month = parseInt(match[2], 10) - 1;
-        const date =  parseInt(match[3], 10);
+        const monthIndex = parseInt(match[2], 10) - 1;
+        const dayOfMonth =  parseInt(match[3], 10);
         const hours = parseInt(match[4], 10);
         const mins = parseInt(match[5], 10);
         const secs = parseInt(match[6], 10);
-        // @todo utc or not?
-        return new Date(Date.UTC(year, month, date, hours, mins, secs, 0));
+        // @todo read ms from alternative format
+        if (utc) {
+            return new Date(Date.UTC(year, monthIndex, dayOfMonth, hours, mins, secs, 0));
+        } else {
+            return new Date(year, monthIndex, dayOfMonth, hours, mins, secs, 0);
+        }
     } else {
         return null;
     }
 };
 
+const utcYmdHisToDate = function(ymdHis: any): Date|null {
+    return ymdHisToDate(ymdHis, true);
+};
+
+const localYmdHisToDate = function(ymdHis: any): Date|null {
+    return ymdHisToDate(ymdHis, false);
+};
+
 const ymdHisToFormat = function(ymdHis: any, format: string): string|null {
-    let date = ymdHisToDate(ymdHis);
+    let date = ymdHisToDate(ymdHis, true);
     if (date) {
-        return dateTimeFormat(date, format, true);
+        return dateToFormat(date, format, true);
     } else {
         return null;
     }
@@ -351,10 +384,31 @@ const ymdHisToFormat = function(ymdHis: any, format: string): string|null {
 const tsToFormat = function(ts: any, format: string, utc: boolean): string|null {
     if (typeof ts == 'number') {
         const date = new Date(ts);
-        return dateTimeFormat(date, format, utc);
+        return dateToFormat(date, format, utc);
     } else {
         return null;
     }
 };
 
-export { isLeapYear, dateTimeFormat, ymdToDate, ymdToFormat, ymdHisToDate, ymdHisToFormat, tsToFormat };
+const tsToUtcFormat = function(ts: any, format: string): string|null {
+    return tsToFormat(ts, format, true);
+};
+
+const tsToLocalFormat = function(ts: any, format: string): string|null {
+    return tsToFormat(ts, format, false);
+};
+
+export {
+    isLeapYear,
+    numDaysInMonth,
+    dateToUtcFormat,
+    dateToLocalFormat,
+    utcYmdToDate,
+    localYmdToDate,
+    ymdToFormat,
+    utcYmdHisToDate,
+    localYmdHisToDate,
+    ymdHisToFormat,
+    tsToUtcFormat,
+    tsToLocalFormat,
+};
