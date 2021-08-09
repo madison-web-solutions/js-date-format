@@ -1,9 +1,9 @@
 
-const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const longDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const longMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const daysInMonthNotLeapYear = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const shortDayNames: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const longDayNames: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const shortMonthNames: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const longMonthNames: string[] = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const daysInMonthNotLeapYear: number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 const numToString = function(val: number, withLeadingZeros: boolean): string {
     const strVal = val.toString(10);
@@ -276,10 +276,7 @@ const dateTimeChar = function(char: string, date: Date, utc: boolean): string {
     }
 };
 
-const dateTimeFormat = function(format: string, date: Date|null, utc: boolean) {
-    if (! date) {
-        date = new Date();
-    }
+const dateTimeFormat = function(date: Date, format: string, utc: boolean): string {
     let char: string;
     let out:string = '';
     for (let i = 0; i < format.length; i++) {
@@ -302,22 +299,23 @@ const ymdToDate = function(ymd: any): Date|null {
             const year = parseInt(match[1], 10);
             const month = parseInt(match[2], 10) - 1;
             const date =  parseInt(match[3], 10);
+            // @todo utc or not?
             return new Date(Date.UTC(year, month, date, 0, 0, 0, 0));
         }
     }
     return null;
 };
 
-const ymdToFormat = function(ymd: any, format: string) {
+const ymdToFormat = function(ymd: any, format: string): string|null {
     const date = ymdToDate(ymd);
     if (date) {
-        return dateTimeFormat(format, date, true);
+        return dateTimeFormat(date, format, true);
     } else {
         return null;
     }
 };
 
-const ymdHisToDate = function(ymdHis: any) {
+const ymdHisToDate = function(ymdHis: any): Date|null {
     if (typeof ymdHis == 'string') {
         // look for Y-m-d H:i:s format (eg 2020-06-30 07:36:15)
         let match = /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/.exec(ymdHis.trim());
@@ -334,23 +332,26 @@ const ymdHisToDate = function(ymdHis: any) {
         const hours = parseInt(match[4], 10);
         const mins = parseInt(match[5], 10);
         const secs = parseInt(match[6], 10);
+        // @todo utc or not?
         return new Date(Date.UTC(year, month, date, hours, mins, secs, 0));
-    }
-};
-
-const ymdHisToFormat = function(ymdHis: any, format: string) {
-    let date = ymdHisToDate(ymdHis);
-    if (date) {
-        return dateTimeFormat(format, date, true);
     } else {
         return null;
     }
 };
 
-const tsToFormat = function(ts: any, format: string, utc: boolean) {
+const ymdHisToFormat = function(ymdHis: any, format: string): string|null {
+    let date = ymdHisToDate(ymdHis);
+    if (date) {
+        return dateTimeFormat(date, format, true);
+    } else {
+        return null;
+    }
+};
+
+const tsToFormat = function(ts: any, format: string, utc: boolean): string|null {
     if (typeof ts == 'number') {
         const date = new Date(ts);
-        return dateTimeFormat(format, date, utc);
+        return dateTimeFormat(date, format, utc);
     } else {
         return null;
     }
