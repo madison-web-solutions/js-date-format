@@ -79,6 +79,7 @@ test('singleChars1', () => {
     { char: 'i', expected: '38' },
     { char: 's', expected: '10' },
     { char: 'v', expected: '0' },
+    { char: 'U', expected: '1628444290' },
   ];
   checks.forEach((check) => {
     expect(ymdHisToFormat(ymdHis, check.char)).toBe(check.expected);
@@ -116,6 +117,7 @@ test('singleChars2', () => {
     { char: 'i', expected: '00' },
     { char: 's', expected: '00' },
     { char: 'v', expected: '0' },
+    { char: 'U', expected: '1609459200' },
   ];
   checks.forEach((check) => {
     expect(ymdHisToFormat(ymdHis, check.char)).toBe(check.expected);
@@ -140,6 +142,10 @@ test('dateTimeFormat', () => {
     expect(dateToLocalFormat(d, check.format)).toBe(check.local);
     expect(dateToUtcFormat(d, check.format)).toBe(check.utc);
   });
+  // Milliseconds aren't covered by the above, so test here
+  d.setMilliseconds(123);
+  expect(dateToLocalFormat(d, 'v')).toBe('123');
+  expect(dateToUtcFormat(d, 'v')).toBe('123');
 });
 
 test('ymdToFormat', () => {

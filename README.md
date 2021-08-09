@@ -72,7 +72,7 @@ ymdToFormat('2021-09-08', '\\M: M'); // "M: Aug"
 |`v`|Milliseconds.|Example: `654`|
 |`U`|Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT), rounded to the nearest second|`1628524558`|
 
-Codes from PHP's date() function that are not yet supported:
+Codes from PHP's date() function that are not supported:
 
  - Swatch Internet time (`B`) - Not supported because... who needs it?
  - Microseconds (`u`) - Not supported because javascript Date objects only have millisecond precision

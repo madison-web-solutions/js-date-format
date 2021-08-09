@@ -289,6 +289,9 @@ const dateTimeChar = (char: string, date: Date, utc: boolean): string => {
     case 'v':
       // Milliseconds
       return numToString(getMilliseconds(date, utc), false);
+    case 'U':
+      // Unix timestamp - seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
+      return numToString(Math.round(date.getTime() / 1000), false);
     default:
       return char;
   }
