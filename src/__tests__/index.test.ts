@@ -11,6 +11,9 @@ import {
   localYmdHisToDate,
   tsToUtcFormat,
   tsToLocalFormat,
+  isoToDate,
+  isoToLocalFormat,
+  isoToUtcFormat,
 } from '../index';
 
 test('timezone', () => {
@@ -266,4 +269,43 @@ test('tsToFormat', () => {
     expect(tsToLocalFormat(ts, check.format)).toBe(check.local);
     expect(tsToUtcFormat(ts, check.format)).toBe(check.utc);
   });
+});
+
+test('isoToDate', () => {
+  const checks: { iso: any; valid: boolean; utcString: string; ms: number }[] = [
+    { iso: '2021-08-16T12:32:15Z', valid: true, utcString: 'Mon, 16 Aug 2021 12:32:15 GMT', ms: 0 },
+    { iso: '2021-08-16T12:32:15.314845Z', valid: true, utcString: 'Mon, 16 Aug 2021 12:32:15 GMT', ms: 315 },
+    { iso: '2021-08-16T12:32:15+00:00', valid: true, utcString: 'Mon, 16 Aug 2021 12:32:15 GMT', ms: 0 },
+    { iso: '2021-08-16T12:32:15.314845+00:00', valid: true, utcString: 'Mon, 16 Aug 2021 12:32:15 GMT', ms: 315 },
+    { iso: '2021-08-16T12:32:15+02:00', valid: true, utcString: 'Mon, 16 Aug 2021 10:32:15 GMT', ms: 0 },
+    { iso: '2021-08-16T12:32:15.314845+02:00', valid: true, utcString: 'Mon, 16 Aug 2021 10:32:15 GMT', ms: 315 },
+    { iso: '2021-08-16T12:32:15-02:00', valid: true, utcString: 'Mon, 16 Aug 2021 14:32:15 GMT', ms: 0 },
+    { iso: '2021-08-16T12:32:15.314845-02:00', valid: true, utcString: 'Mon, 16 Aug 2021 14:32:15 GMT', ms: 315 },
+    { iso: '2021-08-16T06:32:15+07:30', valid: true, utcString: 'Sun, 15 Aug 2021 23:02:15 GMT', ms: 0 },
+
+    { iso: 'invalid', valid: false, utcString: '', ms: 0 },
+    { iso: null, valid: false, utcString: '', ms: 0 },
+    { iso: 234534, valid: false, utcString: '', ms: 0 },
+    { iso: '2021-08-16 12:32:15', valid: false, utcString: '', ms: 0 },
+  ];
+  checks.forEach((check) => {
+    const date = isoToDate(check.iso);
+    if (check.valid) {
+      expect(date instanceof Date).toBe(true);
+      if (date instanceof Date) {
+        expect(date.toUTCString()).toBe(check.utcString);
+        expect(date.getUTCMilliseconds()).toBe(check.ms);
+      }
+    } else {
+      expect(date == null).toBe(true);
+    }
+  });
+});
+
+test('isoToFormat', () => {
+  const iso = '2021-08-16T12:30:00-02:00';
+  // Timezone offset of -02:00, so converting to UTC, this will be:
+  expect(isoToUtcFormat(iso, 'Y-m-d H:i:s')).toBe('2021-08-16 14:30:00');
+  // Istanbul is 3 additional hours ahead
+  expect(isoToLocalFormat(iso, 'Y-m-d H:i:s')).toBe('2021-08-16 17:30:00');
 });

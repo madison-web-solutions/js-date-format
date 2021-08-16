@@ -395,6 +395,50 @@ const ymdHisToFormat = (ymdHis: any, format: string): string | null => {
   }
 };
 
+const isoToDate = (iso: any): Date | null => {
+  if (typeof iso === 'string') {
+    // look for iso format eg
+    // 2020-06-30T07:36:15+02:00
+    // 2019-11-26T13:47:23.342983Z
+    const match = /^(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d\d\d\d\d\d)?(([+-])(\d\d):(\d\d)|Z)$/.exec(
+      iso.trim(),
+    );
+    if (!match) {
+      return null;
+    }
+    const year = parseInt(match[1], 10);
+    const monthIndex = parseInt(match[2], 10) - 1;
+    const dayOfMonth = parseInt(match[3], 10);
+    const hours = parseInt(match[4], 10);
+    let mins = parseInt(match[5], 10);
+    const secs = parseInt(match[6], 10);
+    const millisecs = Math.round(match[7] == null ? 0 : parseFloat(match[7]) * 1000);
+    if (match[8] !== 'Z') {
+      mins += (match[9] === '+' ? -1 : 1) * (parseInt(match[10], 10) * 60 + parseInt(match[11], 10));
+    }
+    return new Date(Date.UTC(year, monthIndex, dayOfMonth, hours, mins, secs, millisecs));
+  } else {
+    return null;
+  }
+};
+
+const isoToFormat = (iso: any, format: string, utc: boolean): string | null => {
+  const date = isoToDate(iso);
+  if (date) {
+    return dateToFormat(date, format, utc);
+  } else {
+    return null;
+  }
+};
+
+const isoToUtcFormat = (iso: any, format: string): string | null => {
+  return isoToFormat(iso, format, true);
+};
+
+const isoToLocalFormat = (iso: any, format: string): string | null => {
+  return isoToFormat(iso, format, false);
+};
+
 const tsToFormat = (ts: any, format: string, utc: boolean): string | null => {
   if (typeof ts === 'number') {
     const date = new Date(ts);
@@ -423,6 +467,9 @@ export {
   utcYmdHisToDate,
   localYmdHisToDate,
   ymdHisToFormat,
+  isoToDate,
+  isoToUtcFormat,
+  isoToLocalFormat,
   tsToUtcFormat,
   tsToLocalFormat,
 };

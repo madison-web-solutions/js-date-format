@@ -5,7 +5,7 @@ Formatting of date and times in JS using format codes that match the PHP date() 
 For example:
 
 ```js
-import { dateToLocalFormat }
+import { dateToLocalFormat } from 'date-format-ms';
 
 dateToLocalFormat(new Date(), 'D jS M Y g:ia'); // "Monday 9th Aug 2021 5:30pm"
 ```
@@ -89,7 +89,7 @@ Codes from PHP's date() function that are not supported:
 
 Takes a javascript Date object and turns it into a string in the supplied format.
 
-If you use `dateToLocalFormat`, the output will be in your local timezone, if you use `dateToUtcFormat` the output will will be in the UTC timezone.
+If you use `dateToLocalFormat`, the output will be in your local timezone, if you use `dateToUtcFormat` the output will be in the UTC timezone.
 
 ```js
 import { dateToUtcFormat, dateToLocalFormat } from 'date-format-ms';
@@ -102,17 +102,40 @@ dateToUtcFormat(d0, 'Y-m-d H:i:s'); // "2020-12-31 22:30:00"
 
 // If you want to specify UTC parameters when creating the JS Date you can do this:
 const d1 = new Date(Date.UTC(2021, 0, 1, 1, 30, 0, 0));
-// d0 represents Jan 1st 2021 1:30am in UTC
+// d1 represents Jan 1st 2021 1:30am in UTC
 dateToUtcFormat(d1, 'Y-m-d H:i:s'); // "2021-01-01 01:30:00"
 // Istanbul is 3 hours ahead
 dateToLocalFormat(d1, 'Y-m-d H:i:s'); // "2021-01-01 04:30:00"
+```
+
+#### isoToUtcFormat and isoToLocalFormat,
+
+`(iso: any, format: string): string | null`
+
+Takes a datetime represented as a string in ISO8601 format and turns it into a string in the supplied format.
+
+The ISO format consists of a Y-m-d date, followed by the letter 'T' to delimit the time portion, then a time in H:i:s format,
+with optional milliseconds, then a timezone indicator - either 'Z' for UTC or an offset like +04:00 or -10:00.
+
+Eg '2021-08-16T12:32:15Z' or '2021-08-16T12:32:15.314845+02:00'
+
+If you use `isoToLocalFormat`, the output will be in your local timezone, if you use `isoToUtcFormat` the output will be in the UTC timezone.
+
+```js
+import { isoToUtcFormat, isoToLocalFormat } from 'date-format-ms';
+
+const iso = '2021-08-16T12:30:00-02:00'
+// Timezone offset of -02:00, so converting to UTC, this will be:
+isoToUtcFormat(iso, 'Y-m-d H:i:s'); // "2021-08-16 14:30:00"
+// Istanbul is 3 additional hours ahead
+isoToLocalFormat(iso, 'Y-m-d H:i:s'); // "2021-08-16 17:30:00"
 ```
 
 #### ymdHisToFormat
 
 `(ymdHis: any, format: string): string | null`
 
-Takes a date represented as a string in the 'Y-m-d H:i:s' format, and turns it into a string in the supplied format.
+Takes a datetime represented as a string in the 'Y-m-d H:i:s' format, and turns it into a string in the supplied format.
 
 If the input is not a string, or is not in the expected 'Y-m-d H:i:s' format, the return value will be `null`.
 
@@ -151,7 +174,7 @@ Javascript timestamps are defined as the number of _milliseconds_ since the Unix
 Note that the Unix timestamp is normally defined as the number of _seconds_ since the Unix epoch, so to convert
 a Unix timestamp to a Javascript timestamp you can multiply by 1000.
 
-If you use `tsToLocalFormat`, the output will be in your local timezone, if you use `tsToUtcFormat` the output will will be in the UTC timezone.
+If you use `tsToLocalFormat`, the output will be in your local timezone, if you use `tsToUtcFormat` the output will be in the UTC timezone.
 
 ```js
 import { tsToUtcFormat, tsToLocalFormat } from 'date-format-ms';
