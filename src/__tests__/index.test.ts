@@ -151,6 +151,20 @@ test('dateTimeFormat', () => {
   expect(dateToUtcFormat(d, 'v')).toBe('123');
 });
 
+test('dateTimeFormatPreAd1000', () => {
+  // Create a date which is Oct 10th AD0001 3:40am UTC
+  const d: Date = new Date();
+  d.setUTCFullYear(1, 9, 10);
+  d.setUTCHours(3, 40, 0, 0);
+  expect(dateToUtcFormat(d, 'd/m/Y H:i:s')).toBe('10/10/0001 03:40:00');
+  expect(dateToUtcFormat(d, 'd/m/y H:i:s')).toBe('10/10/01 03:40:00');
+  // Same for a local date
+  d.setFullYear(1, 9, 10);
+  d.setHours(3, 40, 0, 0);
+  expect(dateToLocalFormat(d, 'd/m/Y H:i:s')).toBe('10/10/0001 03:40:00');
+  expect(dateToLocalFormat(d, 'd/m/y H:i:s')).toBe('10/10/01 03:40:00');
+});
+
 test('ymdToFormat', () => {
   const ymd = '2021-08-09';
   const checks: { format: string; expected: string }[] = [
@@ -164,7 +178,7 @@ test('ymdToFormat', () => {
 });
 
 test('ymdToDate', () => {
-  const checks: { ymd: string; valid: boolean; utcUtcString: string; localUtcString: string }[] = [
+  const checks: { ymd: string; valid: boolean; utcUtcString: string; localUtcString?: string, localString?: string}[] = [
     {
       ymd: '2021-08-09',
       valid: true,
@@ -187,6 +201,12 @@ test('ymdToDate', () => {
       utcUtcString: '',
       localUtcString: '',
     },
+    {
+      // Test pre 1000AD year
+      ymd: '0001-10-10',
+      valid: true,
+      utcUtcString: 'Wed, 10 Oct 0001 00:00:00 GMT',
+    }
   ];
   checks.forEach((check) => {
     let dUtc = utcYmdToDate(check.ymd);
@@ -197,7 +217,7 @@ test('ymdToDate', () => {
       if (dUtc instanceof Date) {
         expect(dUtc.toUTCString()).toBe(check.utcUtcString);
       }
-      if (dLocal instanceof Date) {
+      if (check.localUtcString != null && dLocal instanceof Date) {
         expect(dLocal.toUTCString()).toBe(check.localUtcString);
       }
     } else {
@@ -208,7 +228,7 @@ test('ymdToDate', () => {
 });
 
 test('ymdHisToDate', () => {
-  const checks: { ymdHis: string; valid: boolean; utcUtcString: string; localUtcString: string }[] = [
+  const checks: { ymdHis: string; valid: boolean; utcUtcString: string; localUtcString?: string }[] = [
     {
       ymdHis: '2021-08-09 01:20:39',
       valid: true,
@@ -231,6 +251,12 @@ test('ymdHisToDate', () => {
       utcUtcString: '',
       localUtcString: '',
     },
+    {
+      // Test pre 1000AD year
+      ymdHis: '0001-10-10 01:20:39',
+      valid: true,
+      utcUtcString: 'Wed, 10 Oct 0001 01:20:39 GMT',
+    }
   ];
   checks.forEach((check) => {
     let dUtc = utcYmdHisToDate(check.ymdHis);
@@ -241,7 +267,7 @@ test('ymdHisToDate', () => {
       if (dUtc instanceof Date) {
         expect(dUtc.toUTCString()).toBe(check.utcUtcString);
       }
-      if (dLocal instanceof Date) {
+      if (check.localUtcString != null && dLocal instanceof Date) {
         expect(dLocal.toUTCString()).toBe(check.localUtcString);
       }
     } else {
