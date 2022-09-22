@@ -1,6 +1,6 @@
 {
   "name": "date-format-ms",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Formatting of dates and times in JS using format codes that match the PHP date() function",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
