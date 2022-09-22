@@ -387,9 +387,27 @@ const localYmdHisToDate = (ymdHis: any): Date | null => {
 };
 
 const ymdHisToFormat = (ymdHis: any, format: string): string | null => {
-  const date = ymdHisToDate(ymdHis, true);
+  const date = utcYmdHisToDate(ymdHis);
   if (date) {
-    return dateToFormat(date, format, true);
+    return dateToUtcFormat(date, format);
+  } else {
+    return null;
+  }
+};
+
+const utcYmdHisToLocalFormat = (ymdHis: any, format: string): string | null => {
+  const date = utcYmdHisToDate(ymdHis);
+  if (date) {
+    return dateToLocalFormat(date, format);
+  } else {
+    return null;
+  }
+};
+
+const localYmdHisToUtcFormat = (ymdHis: any, format: string): string | null => {
+  const date = localYmdHisToDate(ymdHis);
+  if (date) {
+    return dateToUtcFormat(date, format);
   } else {
     return null;
   }
@@ -467,6 +485,8 @@ export {
   utcYmdHisToDate,
   localYmdHisToDate,
   ymdHisToFormat,
+  utcYmdHisToLocalFormat,
+  localYmdHisToUtcFormat,
   isoToDate,
   isoToUtcFormat,
   isoToLocalFormat,

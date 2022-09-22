@@ -5,6 +5,8 @@ import {
   dateToLocalFormat,
   ymdToFormat,
   ymdHisToFormat,
+  utcYmdHisToLocalFormat,
+  localYmdHisToUtcFormat,
   utcYmdToDate,
   localYmdToDate,
   utcYmdHisToDate,
@@ -208,12 +210,14 @@ test('ymdToDate', () => {
 });
 
 test('ymdHisToDate', () => {
-  const checks: { ymdHis: string; valid: boolean; utcUtcString: string; localUtcString: string }[] = [
+  const checks: { ymdHis: string; valid: boolean; utcUtcString: string; utcLocalString: string; localUtcString: string }[] = [
     {
       ymdHis: '2021-08-09 01:20:39',
       valid: true,
       // If the string is interpreted as a UTC time, then the utdString for the date will match
       utcUtcString: 'Mon, 09 Aug 2021 01:20:39 GMT',
+      // If the string is interpreted as a UTC time, then the string for the date in Istanbul (local) time should be
+      utcLocalString: 'Mon, 09 Aug 2021 04:20:39 TRT',
       // If the string is interpreted as Istanbul (local) time, then in UTC it will be the previous day
       localUtcString: 'Sun, 08 Aug 2021 22:20:39 GMT',
     },
@@ -222,6 +226,7 @@ test('ymdHisToDate', () => {
       ymdHis: '2021-04-31 17:70:10',
       valid: true,
       utcUtcString: 'Sat, 01 May 2021 18:10:10 GMT',
+      utcLocalString: 'Sat, 01 May 2021 21:10:10 TRT',
       localUtcString: 'Sat, 01 May 2021 15:10:10 GMT',
     },
     {
@@ -229,9 +234,11 @@ test('ymdHisToDate', () => {
       ymdHis: '2021 08 09 234',
       valid: false,
       utcUtcString: '',
+      utcLocalString: '',
       localUtcString: '',
     },
   ];
+  const format = "D, d M Y H:i:s";
   checks.forEach((check) => {
     let dUtc = utcYmdHisToDate(check.ymdHis);
     let dLocal = localYmdHisToDate(check.ymdHis);
@@ -244,6 +251,9 @@ test('ymdHisToDate', () => {
       if (dLocal instanceof Date) {
         expect(dLocal.toUTCString()).toBe(check.localUtcString);
       }
+      expect(ymdHisToFormat(check.ymdHis, format) + ' GMT').toBe(check.utcUtcString);
+      expect(utcYmdHisToLocalFormat(check.ymdHis, format) + ' TRT').toBe(check.utcLocalString);
+      expect(localYmdHisToUtcFormat(check.ymdHis, format) + ' GMT').toBe(check.localUtcString);
     } else {
       expect(dUtc == null).toBe(true);
       expect(dLocal == null).toBe(true);

@@ -131,13 +131,17 @@ isoToUtcFormat(iso, 'Y-m-d H:i:s'); // "2021-08-16 14:30:00"
 isoToLocalFormat(iso, 'Y-m-d H:i:s'); // "2021-08-16 17:30:00"
 ```
 
-#### ymdHisToFormat
+#### ymdHisToFormat, utcYmdHisToLocalFormat, localYmdHisToUtcFormat
 
 `(ymdHis: any, format: string): string | null`
 
 Takes a datetime represented as a string in the 'Y-m-d H:i:s' format, and turns it into a string in the supplied format.
 
 If the input is not a string, or is not in the expected 'Y-m-d H:i:s' format, the return value will be `null`.
+
+If you use `ymdHisToFormat` then there is no timezone conversion - it's purely formatting.
+
+If you use `utcYmdHisToLocalFormat`, the input will be interpreted as a string in UTC timezone, and the output will be in your local timezone. If you use `localYmdHisToUtcFormat` the input will be interpreted as a string in your local timezone, and the output will will be in the UTC timezone.
 
 ```js
 import { ymdHisToFormat } from 'date-format-ms';
