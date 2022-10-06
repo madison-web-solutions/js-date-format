@@ -19,17 +19,19 @@ const daysInMonthNotLeapYear: number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31
 const microsecondsInDay: number = 1000 * 60 * 60 * 24;
 const microsecondsInWeek: number = 1000 * 60 * 60 * 24 * 7;
 
-const numToString = (val: number, withLeadingZeros: boolean): string => {
+const padZeros = (str: string, minLen: number): string => {
+  while (str.length < minLen) {
+    str = '0' + str;
+  }
+  return str;
+};
+
+const numToString = (val: number, withLeadingZeros: boolean | number): string => {
   const strVal = val.toString(10);
-  if (withLeadingZeros) {
-    switch (strVal.length) {
-      case 0:
-        return '00';
-      case 1:
-        return '0' + strVal;
-      default:
-        return strVal;
-    }
+  if (typeof withLeadingZeros === 'number') {
+    return padZeros(strVal, withLeadingZeros);
+  } else if (withLeadingZeros === true) {
+    return padZeros(strVal, 2);
   } else {
     return strVal;
   }
@@ -249,11 +251,11 @@ const dateTimeChar = (char: string, date: Date, utc: boolean): string => {
     case 'Y':
       // A full numeric representation of a year, 4 digits
       // Examples: 1999 or 2003
-      return numToString(getYear(date, utc), false);
+      return numToString(getYear(date, utc), 4);
     case 'y':
       // A two digit representation of a year
       // Examples: 99 or 03
-      return numToString(getYear(date, utc), false).substr(2, 2);
+      return numToString(getYear(date, utc), 2).slice(-2);
     case 'a':
       // Lowercase Ante meridiem and Post meridiem
       // am or pm
@@ -328,11 +330,16 @@ const ymdToDate = (ymd: any, utc: boolean): Date | null => {
       const year = parseInt(match[1], 10);
       const monthIndex = parseInt(match[2], 10) - 1;
       const dayOfMonth = parseInt(match[3], 10);
+      const d = new Date();
       if (utc) {
-        return new Date(Date.UTC(year, monthIndex, dayOfMonth, 0, 0, 0, 0));
+        d.setUTCFullYear(year, monthIndex, dayOfMonth);
+        d.setUTCHours(0, 0, 0, 0);
       } else {
-        return new Date(year, monthIndex, dayOfMonth, 0, 0, 0, 0);
+        d.setFullYear(year, monthIndex, dayOfMonth);
+        d.setHours(0, 0, 0, 0);
+        return d;
       }
+      return d;
     }
   }
   return null;
@@ -368,11 +375,16 @@ const ymdHisToDate = (ymdHis: any, utc: boolean): Date | null => {
     const hours = parseInt(match[4], 10);
     const mins = parseInt(match[5], 10);
     const secs = parseInt(match[6], 10);
+    const d = new Date();
     if (utc) {
-      return new Date(Date.UTC(year, monthIndex, dayOfMonth, hours, mins, secs, 0));
+      d.setUTCFullYear(year, monthIndex, dayOfMonth);
+      d.setUTCHours(hours, mins, secs, 0);
     } else {
-      return new Date(year, monthIndex, dayOfMonth, hours, mins, secs, 0);
+      d.setFullYear(year, monthIndex, dayOfMonth);
+      d.setHours(hours, mins, secs, 0);
+      return d;
     }
+    return d;
   } else {
     return null;
   }
